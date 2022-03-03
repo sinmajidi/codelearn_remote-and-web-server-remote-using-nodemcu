@@ -10,8 +10,8 @@
 #define led4 16
 //String username="admin";
 //String password="admin";
-const char *ssid = "AFRA";
-const char *passphrase = "admin1234";
+//String ssid = "AFRA";
+//String passphrase = "admin1234";
 String security_code="AzpH4798@";
 ESP8266WebServer server(80);
 RCSwitch mySwitch = RCSwitch();
@@ -81,6 +81,7 @@ void handleLogin() {
   <p  align ='center' style='font-size:160%'><b>Password: <input type='password' name='PASSWORD' placeholder='password' required></b></p><br>
   <p  align ='center' style='font-size:160%'><input style='border: 1px solid red;background-color:transparent;padding:10px;color:#ff0000;border-radius:10px;font-size: 1.2em;' type='submit' name='submit' value='Log in'></form></p><br>
   <br><br><hr><br>forget password??? <a class="forget" href="/forget">forget</a>
+  <br><br><hr><br>forget wifi info??? <a class="forget" href="/forget_wifi_info">change wifi info</a>
   </body></html>
   )***";
   server.send(200, "text/html", content);
@@ -181,9 +182,7 @@ String readString(int address)
 
 void setup()
 {
-
-  
-
+ 
   Serial.print("The String we read from EEPROM: ");
   Serial.println(readString(200));
   Serial.print("The String we read from EEPROM: ");
@@ -194,6 +193,7 @@ void setup()
   pinMode(led3, OUTPUT); 
   pinMode(led4, OUTPUT); 
   pinMode(10, OUTPUT);
+  pinMode(15,INPUT);
   pinMode(4,INPUT);
   pinMode(5,INPUT);// D1 pin in nodemcu
   digitalWrite(led1,LOW);
@@ -205,23 +205,29 @@ void setup()
   Serial.begin(115200);
   Serial.println();
   Serial.print("Access point configuration...");
- Serial.print("Setting soft-AP ... ");
-  Serial.println(WiFi.softAP(ssid,passphrase) ? "Ready" : "Failed!");
+  Serial.print("Setting soft-AP ... ");
+  Serial.println(WiFi.softAP(readString(170),readString(185)) ? "Ready" : "Failed!");
   //WiFi.softAP(ssid);
   //WiFi.softAP(ssid, passphrase, channel, ssdi_hidden, max_connection)
   
   Serial.print("Soft-AP IP address = ");
-
+;
   Serial.println(WiFi.softAPIP());
    Serial.print("The String we read from EEPROM: ");
   Serial.println(readString(200));
   Serial.print("The String we read from EEPROM: ");
   Serial.println(readString(225));
+  Serial.print("The String we read from EEPROM: ");
+  Serial.println(readString(170));
+  Serial.print("The String we read from EEPROM: ");
+  Serial.println(readString(185));
   server.on("/", handleRoot);
   server.on("/login", handleLogin);
   server.on("/change_username_and_password", change_username_and_password);
   server.on("/change_wifi_password",  change_wifi_password);
   server.on("/forget",forget);
+  server.on("/forget_wifi_info",forget_wifi_info);
+  
  
   server.on("/inline", []() {
     server.send(200, "text/plain", "this works without need of authentification");
@@ -253,6 +259,11 @@ void loop()
   delay(200);
   digitalWrite(10,LOW);
   delay(200);
+  if(digitalRead(15)==HIGH)
+{
+  writeString(170,"afra");
+  writeString(185,"admin1234");
+}
 //  if(digitalRead(4)==HIGH)
 //  {
 //     //the way to clear EEPROM
@@ -411,11 +422,36 @@ void loop()
  else
    digitalWrite(led4,LOW);
 }
+
+
+void forget_wifi_info()
+{
+  
+   if (server.hasArg("security")) {
+   if(server.arg("security")==security_code)
+    server.sendHeader("Location", "/change_wifi_password");
+    server.send(301);
+      return;
+  }
+  
+  String content = R"***(
+   <!DOCTYPE html> <html>
+  <head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">
+  <title>AFRA remote control</title></head>
+  <body style='background-color:#CE67D3'><form action='/forget_wifi_info' method='POST'><p  align ='center' style='font-size:300%;'><b>  Welcome to future  </b></p><br>
+  <p  align ='center' style='font-size:300%;'><b>  please enter your security code  </b></p><br>
+  <p   align ='center' style='font-size:160%'><b> security code <input type='text' name='security' placeholder='security code' required></b></p><br>
+  <p  align ='center' style='font-size:160%'><input style='border: 1px solid red;background-color:transparent;padding:10px;color:#ff0000;border-radius:10px;font-size: 1.2em;' type='submit' name='submit' value='check'></form></p><br> </body></html>
+  )***";
+   server.send(200, "text/html", content);
+}
+
+
 void  change_wifi_password()
 {
   if (server.hasArg("W_SSID") && server.hasArg("W_PASSWORD")) {
-//    ssid=server.arg("W_SSID");
-//    passphrase=server.arg("W_PASSWORD");
+    writeString(170,server.arg("W_SSID"));
+    writeString(185,server.arg("W_PASSWORD"));
     server.sendHeader("Location", "/");
     server.send(301);
       Serial.println("ssid and password change Successfuly");
@@ -428,7 +464,7 @@ void  change_wifi_password()
   <body style='background-color:#CE67D3'><form action='/change_wifi_password' method='POST'>
  <p   align ='center' style='font-size:160%'><b> wifi ssid: <input type='text' name='W_SSID' placeholder='SSID' required></b></p><br>
   <p  align ='center' style='font-size:160%'><b>Password: <input type='password' name='W_PASSWORD' placeholder='password' required></b></p><br>
-  <p  align ='center' style='font-size:160%'><input style='border: 1px solid red;background-color:transparent;padding:10px;color:#ff0000;border-radius:10px;font-size: 1.2em;' type='submit' name='submit' value='change_w'></form></p
+  <p  align ='center' style='font-size:160%'><input style='border: 1px solid red;background-color:transparent;padding:10px;color:#ff0000;border-radius:10px;font-size: 1.2em;' type='submit' name='submit' value='change wifi info'></form></p
 </body></html>
   )***";
   server.send(200, "text/html", content);
@@ -459,7 +495,7 @@ void change_username_and_password()
 }
 void forget()
 {
-  Serial.println("ints");
+  
    if (server.hasArg("security")) {
    if(server.arg("security")==security_code)
     server.sendHeader("Location", "/change_username_and_password");
